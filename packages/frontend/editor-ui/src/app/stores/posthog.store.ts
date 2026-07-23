@@ -11,7 +11,7 @@ import {
 	LOCAL_STORAGE_EXPERIMENT_OVERRIDES,
 	TELEMETRY_EVENTS,
 } from '@/app/constants';
-import { useDebounce } from '@/app/composables/useDebounce';
+import { useDebounce } from '@n8n/composables/useDebounce';
 import { useTelemetry } from '@/app/composables/useTelemetry';
 
 const POSTHOG_GROUP_TYPE_INSTANCE = 'company';
@@ -27,6 +27,7 @@ export const usePostHog = defineStore('posthog', () => {
 
 	const featureFlags: Ref<FeatureFlags | null> = ref(null);
 	const trackedDemoExp: Ref<FeatureFlags> = ref({});
+	const trackedExposures: Ref<FeatureFlags> = ref({});
 	const pendingFeatureFlagsEvaluation = ref(false);
 
 	const overrides: Ref<Record<string, string | boolean>> = ref({});
@@ -52,6 +53,7 @@ export const usePostHog = defineStore('posthog', () => {
 		window.posthog?.reset?.();
 		featureFlags.value = null;
 		trackedDemoExp.value = {};
+		trackedExposures.value = {};
 		pendingFeatureFlagsEvaluation.value = false;
 		clearFeatureFlagsWait();
 	};
@@ -238,6 +240,23 @@ export const usePostHog = defineStore('posthog', () => {
 		}
 	};
 
+	/**
+	 * Fires PostHog's native exposure event for an experiment so results can use
+	 * built-in exposure analysis. Uses getVariant() so the recorded variant is the
+	 * one the user actually experienced, including local overrides. Deduped per
+	 * flag+variant; cleared on reset().
+	 */
+	const trackExposure = (experiment: string) => {
+		const variant = getVariant(experiment);
+		if (variant === undefined || variant === false) return;
+		if (trackedExposures.value[experiment] === variant) return;
+		capture('$feature_flag_called', {
+			$feature_flag: experiment,
+			$feature_flag_response: variant,
+		});
+		trackedExposures.value[experiment] = variant;
+	};
+
 	return {
 		init,
 		isFeatureEnabled,
@@ -250,6 +269,7 @@ export const usePostHog = defineStore('posthog', () => {
 		groupIdentify,
 		setMetadata,
 		capture,
+		trackExposure,
 		overrides,
 	};
 });
