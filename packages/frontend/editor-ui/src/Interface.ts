@@ -80,6 +80,7 @@ declare global {
 					api_host?: string;
 					autocapture?: boolean;
 					disable_session_recording?: boolean;
+					advanced_disable_feature_flags?: boolean;
 					debug?: boolean;
 					bootstrap?: {
 						distinctID?: string;
@@ -389,13 +390,6 @@ export interface IActivationError {
 
 export interface IShareWorkflowsPayload {
 	shareWithIds: string[];
-}
-
-export const enum UserManagementAuthenticationMethod {
-	Email = 'email',
-	Ldap = 'ldap',
-	Saml = 'saml',
-	Oidc = 'oidc',
 }
 
 export interface IPermissionGroup {
